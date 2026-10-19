@@ -23,7 +23,7 @@ canvas{display:block;position:fixed;left:0;top:0;width:100%;height:100%}
 const c=document.getElementById('c'),g=c.getContext('2d'),$=id=>document.getElementById(id),R=Math.random,TAU=Math.PI*2,PI=Math.PI;
 const CL=(v,a,b)=>v<a?a:v>b?b:v,LERP=(a,b,k)=>a+(b-a)*k,PICK=a=>a[Math.floor(R()*a.length)],HYP=Math.hypot;
 const QS=new URLSearchParams(location.search);
-let DPR=1,CW=0,CH=0;function resizeCanvas(){DPR=Math.min(devicePixelRatio||1,3);CW=c.width=Math.round(innerWidth*DPR);CH=c.height=Math.round(innerHeight*DPR);if(window.onResize)onResize()}
+let SAFE={t:0,r:0,b:0,l:0};function readSafe(){try{if(window.__SAFE){SAFE=Object.assign({t:0,r:0,b:0,l:0},window.__SAFE);return}const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';document.body.appendChild(d);const cs=getComputedStyle(d);SAFE={t:parseFloat(cs.paddingTop)||0,r:parseFloat(cs.paddingRight)||0,b:parseFloat(cs.paddingBottom)||0,l:parseFloat(cs.paddingLeft)||0};d.remove()}catch(e){}}let DPR=1,CW=0,CH=0;function resizeCanvas(){DPR=Math.min(devicePixelRatio||1,3);readSafe();CW=c.width=Math.round(innerWidth*DPR);CH=c.height=Math.round(innerHeight*DPR);if(window.onResize)onResize()}
 addEventListener('resize',resizeCanvas);
 // ---------- storage
 const ST={get(k,d){try{const v=localStorage.getItem(GAME_ID+':'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(GAME_ID+':'+k,JSON.stringify(v))}catch(e){}}};
@@ -271,7 +271,7 @@ $('help').onclick=e=>{e.stopPropagation();const wasP=paused;if(state=='play'&&!p
 <h3>Dog personalities</h3><p>💪 <b>Puller</b> — Dave walks 15% faster.<br>🐾 <b>Tiny legs</b> — 20% slower.<br>👃 <b>Sniffer</b> — stops every ½ mile to sniff.<br>🐘 <b>Big dog</b> — takes 2 leash spots.<br>💢 <b>Doesn't get along</b> with a certain dog — never on the leash together.</p>
 <h3>Stars</h3><p>★ everyone home before sunset · ★★ a tidy route · ★★★ as good as a pro. Every day was checked by a route solver, so ★★★ is always possible with the starting double leash.</p><p>Earn pay and tips, then visit the <b>Shop</b> for bigger leashes, running shoes and a treat pouch.</p>`,()=>{if(state=='play'&&!wasP&&paused)togglePause()})};
 // ======================= RENDER =======================
-function onResize(){VW=CW/DPR;VH=CH/DPR;SC=Math.min(VW/LW,VH/LH);OXs=(VW-LW*SC)/2;OYs=(VH-LH*SC)/2}
+function onResize(){VW=CW/DPR;VH=CH/DPR;const aw=VW-SAFE.l-SAFE.r,ah=VH-SAFE.t-SAFE.b;SC=Math.min(aw/LW,ah/LH);OXs=SAFE.l+(aw-LW*SC)/2;OYs=SAFE.t+(ah-LH*SC)/2}
 function btn(x,y,w,h,label,fn,col='#2e8b57',fs=16){menuBtns.push({x,y,w,h,fn});g.fillStyle=col;rrect(g,x,y,w,h,12);g.fill();g.strokeStyle='#fff';g.lineWidth=2;g.stroke();g.fillStyle='#fff';g.font='bold '+fs+'px "Trebuchet MS",sans-serif';g.textAlign='center';g.fillText(label,x+w/2,y+h/2+fs*.36)}
 function wrapT(s,x,y,w,lh,draw=true){const words=s.split(' ');let line='',n=0;for(const wd of words){const t=line?line+' '+wd:wd;if(g.measureText(t).width>w&&line){if(draw)g.fillText(line,x,y+n*lh);n++;line=wd}else line=t}if(line){if(draw)g.fillText(line,x,y+n*lh);n++}return n}
 function skyCols(f){// f: 0 morning .. 1 sunset
@@ -283,9 +283,29 @@ function drawSky(){const f=clock/sunset;const[c1,c2]=skyCols(f);const gr=g.creat
  const a=PI*(1-CL(f,0,1.1)*.92)-0.05,sx=200+Math.cos(a)*190,sy=92-Math.sin(a)*70;g.fillStyle='rgba(255,230,120,.35)';g.beginPath();g.arc(sx,sy,22,0,TAU);g.fill();g.fillStyle=f>.85?'#ff7a3a':'#ffd84a';g.beginPath();g.arc(sx,sy,13,0,TAU);g.fill();
  // skyline
  g.fillStyle='rgba(40,60,90,.35)';for(let k=0;k<20;k++){const h=10+((k*37)%23);g.fillRect(k*21,96-h,18,h)}
- g.fillStyle='rgba(0,0,0,.35)';rrect(g,6,52,180,38,10);g.fill();g.fillStyle='#fff';g.textAlign='left';g.font='bold 20px "Trebuchet MS",sans-serif';g.fillText('🕗 '+fmtT(clock),14,78);
- const left=sunset-clock;g.fillStyle='rgba(0,0,0,.35)';rrect(g,214,52,180,38,10);g.fill();g.textAlign='right';g.fillStyle=left<30?'#ffb0a0':'#fff';g.font='bold 13px sans-serif';g.fillText('🌇 Sunset '+fmtT(sunset),386,68);g.font='12px sans-serif';g.fillText(Math.floor(left/60)+'h '+Math.floor(left%60)+'m of daylight',386,84);
- g.fillStyle='#fff';g.textAlign='left';g.font='bold 13px sans-serif';g.fillText('Day '+L+' · '+lv.title,10,20)}
+ g.fillStyle='rgba(0,0,0,.35)';rrect(g,6,56,180,38,10);g.fill();g.fillStyle='#fff';g.textAlign='left';g.font='bold 20px "Trebuchet MS",sans-serif';g.fillText('🕗 '+fmtT(clock),14,82);
+ const left=sunset-clock;g.fillStyle='rgba(0,0,0,.35)';rrect(g,214,56,180,38,10);g.fill();g.textAlign='right';g.fillStyle=left<30?'#ffb0a0':'#fff';g.font='bold 13px sans-serif';g.fillText('🌇 Sunset '+fmtT(sunset),386,72);g.font='12px sans-serif';g.fillText(Math.floor(left/60)+'h '+Math.floor(left%60)+'m of daylight',386,88);
+ g.fillStyle='#fff';g.textAlign='left';g.font='bold 13px sans-serif';{const tt='Day '+L+' · '+lv.title;if(g.measureText(tt).width>228)g.font='bold 11px sans-serif';g.fillText(tt,10,20)}}
+// ---- map overlays: one non-overlapping stack (start tip, hint, dog info); flips to the top when it would hide Dave or the house in question
+let OVS={fy:150,items:[]};
+function infoText(){if(sel<0)return null;const D=lv.dogs[sel];let s=D.name+' ('+D.look.b+', '+D.owner+'): '+miles(D.dist)+' walk.';if(D.traits.includes('puller'))s+=' Pulls hard — Dave walks faster!';if(D.traits.includes('tiny'))s+=' Tiny legs — slower pace.';if(D.traits.includes('sniffer'))s+=' Stops to sniff every ½ mile.';if(D.traits.includes('big'))s+=' Big dog — takes 2 leash spots.';if(D.hates!=null)s+=' Doesn\'t get along with '+lv.dogs[D.hates].name+'.';
+  return s}
+function layoutOverlays(){const it=[];
+ if(!started)it.push({k:'start',h:44});
+ if(hint){g.font='bold 12px sans-serif';const n=wrapT('💡 '+hint.s,200,0,330,15,false);it.push({k:'hint',h:14+n*15,n})}
+ const s=infoText();if(s){g.font='11px sans-serif';const n=wrapT(s,200,0,360,14,false);it.push({k:'info',h:10+n*14,n,s})}
+ if(!it.length)return{fy:150,items:[]};
+ const tot=it.reduce((a,b)=>a+b.h,0)+4*(it.length-1);const tg=[[dv.x,dv.y-10]];
+ if(hint&&hint.i!=null&&lv.dogs[hint.i])tg.push(nodeXY(lv.dogs[hint.i].node));if(sel>=0)tg.push(nodeXY(lv.dogs[sel].node));
+ const bot=PANEL_Y-10,topY=128;const hit=(y0,y1)=>tg.some(([x,y])=>y+18>y0&&y-24<y1);
+ const hs=lv.dogs.map(D=>nodeXY(D.node)).concat([nodeXY(lv.home)]);const cost=(y0,y1)=>(hit(y0,y1)?100:0)+hs.filter(([x,y])=>y+20>y0&&y-16<y1).length;
+ let y=bot-tot,up=cost(topY,topY+tot)<cost(y,bot);if(up)y=topY;
+ const out=[];for(const o of it){out.push(Object.assign(o,{x:o.k=='info'?10:o.k=='hint'?26:40,w:o.k=='info'?380:o.k=='hint'?348:320,y}));y+=o.h+4}
+ return{fy:up?topY+tot+22:150,items:out}}
+function drawOverlays(){for(const o of OVS.items){g.textAlign='center';
+ if(o.k=='start'){g.fillStyle='rgba(0,0,0,.65)';rrect(g,o.x,o.y,o.w,o.h,12);g.fill();g.fillStyle='#fff';g.font='bold 13px sans-serif';g.fillText('Tap a house or street corner to plan the walk.',200,o.y+18);g.font='11px sans-serif';g.fillText('The clock starts when Dave takes his first step.',200,o.y+34)}
+ else if(o.k=='hint'){g.fillStyle='rgba(30,60,30,.9)';rrect(g,o.x,o.y,o.w,o.h,10);g.fill();g.fillStyle='#e8ffd8';g.font='bold 12px sans-serif';wrapT('💡 '+hint.s,200,o.y+15,330,15)}
+ else{g.fillStyle='rgba(0,0,0,.8)';rrect(g,o.x,o.y,o.w,o.h,8);g.fill();g.fillStyle='#fff';g.font='11px sans-serif';wrapT(o.s,200,o.y+15,360,14)}}}
 function prerenderMap(){mapT=document.createElement('canvas');mapT.width=LW*2;mapT.height=460*2;const o=mapT.getContext('2d');o.scale(2,2);o.translate(0,-96);
  o.fillStyle='#7cb85a';o.fillRect(0,96,LW,460);const rs=DC.srand(L*31+7);
  // blocks
@@ -346,10 +366,11 @@ function render(){const t=GT;menuBtns=[];g.setTransform(DPR,0,0,DPR,0,0);g.fillS
  // leash meter
  g.fillStyle='rgba(0,0,0,.55)';rrect(g,6,100,150,22,8);g.fill();g.fillStyle='#fff';g.textAlign='left';g.font='bold 12px sans-serif';g.fillText('🦮 Leash '+used()+'/'+cap()+'  ·  '+miles(Math.round(blocksWalked*10)/10),12,115);
  g.textAlign='right';g.fillStyle='rgba(0,0,0,.55)';rrect(g,300,100,94,22,8);g.fill();g.fillStyle='#ffe9a0';g.fillText('$'+earned+' today',388,115);
+ OVS=layoutOverlays();
  // floats
- floats.forEach((fl,k)=>{const a=CL((fl.dur-fl.t)*3,0,1);g.globalAlpha=a;g.font='bold 13px sans-serif';const tw=g.measureText(fl.s).width+16;const y=150+k*24-fl.t*6;g.fillStyle='rgba(0,0,0,.7)';rrect(g,200-tw/2,y-15,tw,21,9);g.fill();g.fillStyle=fl.col;g.textAlign='center';g.fillText(fl.s,200,y);g.globalAlpha=1});
- if(!started){g.fillStyle='rgba(0,0,0,.65)';rrect(g,40,480,320,44,12);g.fill();g.fillStyle='#fff';g.textAlign='center';g.font='bold 13px sans-serif';g.fillText('Tap a house or street corner to plan the walk.',200,498);g.font='11px sans-serif';g.fillText('The clock starts when Dave takes his first step.',200,514)}
- if(hint){g.fillStyle='rgba(30,60,30,.9)';g.font='bold 12px sans-serif';const n=wrapT('💡 '+hint.s,200,0,330,15,false);rrect(g,26,470-n*15,348,14+n*15,10);g.fill();g.fillStyle='#e8ffd8';g.textAlign='center';wrapT('💡 '+hint.s,200,485-n*15,330,15)}
+ floats.forEach((fl,k)=>{const a=CL((fl.dur-fl.t)*3,0,1);g.globalAlpha=a;g.font='bold 13px sans-serif';const tw=g.measureText(fl.s).width+16;const y=OVS.fy+k*24-fl.t*6;g.fillStyle='rgba(0,0,0,.7)';rrect(g,200-tw/2,y-15,tw,21,9);g.fill();g.fillStyle=fl.col;g.textAlign='center';g.fillText(fl.s,200,y);g.globalAlpha=1});
+ 
+ 
  // bottom panel
  g.fillStyle='#183a28';g.fillRect(0,PANEL_Y-6,LW,LH-PANEL_Y+6);
  lv.dogs.forEach((D,i)=>{const[x,y,w,h]=cardRect(i),d=ds[i];g.fillStyle=sel==i?'#3a6a4a':d.st==2?'#2a4a36':'#24503a';rrect(g,x,y,w,h,9);g.fill();if(d.st==1){g.strokeStyle='#ffd84a';g.lineWidth=2;g.stroke()}
@@ -358,8 +379,7 @@ function render(){const t=GT;menuBtns=[];g.setTransform(DPR,0,0,DPR,0,0);g.fillS
   g.fillStyle='#cfe';g.font='9px sans-serif';g.textAlign='center';g.fillText(d.st==0?'waiting at home':d.st==1?(d.w>=D.dist?'done! take home':miles(Math.max(0,Math.round((D.dist-d.w)*10)/10)).replace(' mi','')+' mi to go'):'home ✓',x+w/2,y+h-4)});
  const by=LH-46;btn(6,by,92,40,'↶ Undo',undo,'#3a6a8a',14);btn(104,by,92,40,'✖ Clear',()=>{const keep=wps.length&&dv.to>=0?[{node:dv.to,visit:false,path:[]}]:[];wps=[];tone(300,.06,'triangle',.1)},'#6a4a3a',14);
  btn(202,by,92,40,ff?'⏩ Fast ✓':'⏩ Fast',()=>{ff=!ff},ff?'#c88a1a':'#7a6a2a',14);btn(300,by,94,40,'💡 Hint',getHint,'#2e8b57',14);
- if(sel>=0){const D=lv.dogs[sel];let s=D.name+' ('+D.look.b+', '+D.owner+'): '+miles(D.dist)+' walk.';if(D.traits.includes('puller'))s+=' Pulls hard — Dave walks faster!';if(D.traits.includes('tiny'))s+=' Tiny legs — slower pace.';if(D.traits.includes('sniffer'))s+=' Stops to sniff every ½ mile.';if(D.traits.includes('big'))s+=' Big dog — takes 2 leash spots.';if(D.hates!=null)s+=' Doesn\'t get along with '+lv.dogs[D.hates].name+'.';
-  g.font='11px sans-serif';const n=wrapT(s,200,0,360,14,false);g.fillStyle='rgba(0,0,0,.8)';rrect(g,10,PANEL_Y-14-n*14,380,10+n*14,8);g.fill();g.fillStyle='#fff';g.textAlign='center';wrapT(s,200,PANEL_Y-n*14-3,360,14)}
+ drawOverlays();
  if(paused){g.fillStyle='rgba(0,0,0,.55)';g.fillRect(0,0,LW,LH);g.fillStyle='#fff';g.font='bold 34px sans-serif';g.textAlign='center';g.fillText('Paused',200,330);g.font='15px sans-serif';g.fillText('Tap to keep walking',200,360)}
  g.restore()}
 // ======================= MENUS =======================
@@ -401,7 +421,7 @@ let lastT=0;function frame(now){requestAnimationFrame(frame);const dt=Math.min(.
 let pDrawn=0;
 resizeCanvas();chrome(true);
 if(QS.has('level')){const l=CL(parseInt(QS.get('level')),1,NLEV);save.lev=Math.max(save.lev,l);if(QS.has('play'))setTimeout(()=>{startLevel(l);state='play'},50)}
-window.__T={get:()=>({state,L,clock,sunset,started,busy,dogs:ds.map(d=>({st:d.st,w:+d.w.toFixed(2)})),wps:wps.length,result,dv:dv&&{node:dv.node,to:dv.to}}),startLevel,update,addWaypoint,lv:()=>lv,sol:()=>sol,setState:s=>state=s,save:()=>save,getHint,hint:()=>hint,undo};
+window.__T={layout:()=>(OVS=layoutOverlays(),{ov:OVS.items.map(o=>({k:o.k,x:o.x,y:o.y,w:o.w,h:o.h})),fy:OVS.fy,nf:floats.length,dv:[dv.x,dv.y],sel,hint:hint&&hint.i,houses:lv.dogs.map(D=>nodeXY(D.node)),SC,OXs,OYs,VW,VH,SAFE}),select:i=>{sel=i},get:()=>({state,L,clock,sunset,started,busy,dogs:ds.map(d=>({st:d.st,w:+d.w.toFixed(2)})),wps:wps.length,result,dv:dv&&{node:dv.node,to:dv.to}}),startLevel,update,addWaypoint,lv:()=>lv,sol:()=>sol,setState:s=>state=s,save:()=>save,getHint,hint:()=>hint,undo};
 requestAnimationFrame(t=>{lastT=t;frame(t)});
 
 </script>

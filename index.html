@@ -255,6 +255,7 @@ const SONG={bpm:116,tracks:[{type:'triangle',vol:.09,len:1,notes:[72,0,76,0,79,0
 function toL(px,py){return[(px-OXs)/SC,(py-OYs)/SC]}
 const PANEL_Y=548;
 c.addEventListener('pointerdown',e=>{A();if(panelOpen)return;const[x,y]=toL(e.clientX,e.clientY);
+ if(paused&&state=='brief'){togglePause();return}
  if(state!='play'){for(const b of menuBtns)if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){tone(660,.05,'square',.1);b.fn();return}if(state=='brief'){state='play';return}return}
  if(paused){togglePause();return}
  for(const b of menuBtns)if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){b.fn();return}
@@ -263,7 +264,7 @@ c.addEventListener('pointerdown',e=>{A();if(panelOpen)return;const[x,y]=toL(e.cl
  let best=-1,bd=34;for(let i=0;i<lv.N;i++){const[nx,ny]=nodeXY(i);const d=HYP(nx-x,ny-y);if(d<bd){bd=d;best=i}}
  if(best<0)return;const h=houseAt(best);addWaypoint(best,h>=0);hint=null});
 addEventListener('keydown',e=>{if(e.code=='KeyP')togglePause();if(e.code=='KeyM'){A();setMute(!muted)}if(state=='play'&&(e.code=='KeyZ'||e.code=='Backspace'))undo();if(e.code=='KeyF'&&state=='play')ff=!ff;if((e.code=='Enter'||e.code=='Space')&&state=='title'){A();startLevel(save.lev)}else if((e.code=='Enter'||e.code=='Space')&&state=='brief')state='play'});
-function togglePause(){if(state!='play')return;paused=!paused;$('pause').textContent=paused?'▶':'⏸'}
+function togglePause(){if(state!='play'&&state!='brief')return;paused=!paused;$('pause').textContent=paused?'▶':'⏸'}
 $('pause').onclick=e=>{e.stopPropagation();togglePause()};window.musicPaused=()=>paused||state!='play';
 $('help').onclick=e=>{e.stopPropagation();const wasP=paused;if(state=='play'&&!paused)togglePause();panel(`<h2>🐕 Dave's Dog Walking Challenge</h2><p>Dave walks dogs for clients all over town. Every pup needs a walk of a certain length and must be <b>returned home before sunset</b>.</p>
 <h3>How to play</h3><p>• <b>Tap street corners</b> to plan Dave's route. He walks the shortest way to each spot you tap.<br>• <b>Tap a client's house</b> to pick up their dog (if the leash has room).<br>• Every block Dave walks counts for <b>every dog on the leash</b>. One block = ⅛ mile.<br>• When a dog's ring is full ✅, walk past their house and Dave drops them off automatically.<br>• Need extra distance? Tap corners to make a loop.<br>• ↶ Undo removes your last tap. ⏩ speeds up time. 💡 suggests a smart next move.</p>
@@ -396,7 +397,8 @@ function drawMenu(){const t=performance.now()/1000;menuBtns=[];g.setTransform(DP
  g.restore()}
 // ======================= LOOP =======================
 let lastT=0;function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-lastT)/1000||0);lastT=now;
- if(state=='play'){if(!paused&&!panelOpen)update(dt);render()}else{if(state=='result'||state=='brief')update(0);drawMenu()}}
+ if(state=='play'){if(!paused&&!panelOpen)update(dt);render()}else if(paused&&state=='brief'){if(!pDrawn){drawMenu();g.setTransform(DPR*SC,0,0,DPR*SC,DPR*OXs,DPR*OYs);g.fillStyle='rgba(0,0,0,.55)';g.fillRect(0,0,LW,LH);g.fillStyle='#fff';g.font='bold 34px sans-serif';g.textAlign='center';g.fillText('Paused',200,330);g.font='15px sans-serif';g.fillText('Tap to resume',200,362);pDrawn=1}}else{pDrawn=0;if(state=='result'||state=='brief')update(0);drawMenu()}}
+let pDrawn=0;
 resizeCanvas();chrome(true);
 if(QS.has('level')){const l=CL(parseInt(QS.get('level')),1,NLEV);save.lev=Math.max(save.lev,l);if(QS.has('play'))setTimeout(()=>{startLevel(l);state='play'},50)}
 window.__T={get:()=>({state,L,clock,sunset,started,busy,dogs:ds.map(d=>({st:d.st,w:+d.w.toFixed(2)})),wps:wps.length,result,dv:dv&&{node:dv.node,to:dv.to}}),startLevel,update,addWaypoint,lv:()=>lv,sol:()=>sol,setState:s=>state=s,save:()=>save,getHint,hint:()=>hint,undo};
